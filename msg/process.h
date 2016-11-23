@@ -1,6 +1,6 @@
 #pragma once
 
-#include <core/array.h>
+#include <std/array.h>
 #include <msg/channel.h>
 #include <exception>
 
@@ -16,8 +16,9 @@ struct process
 
 	void start();
 	void stop();
-	virtual void run() = 0;
-	virtual void end() = 0;
+	virtual void run();
+	virtual void begin();
+	virtual void end();
 };
 
 struct terminate : public std::exception

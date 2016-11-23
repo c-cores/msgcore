@@ -21,10 +21,23 @@ void process::stop()
 	pthread_join(thread, NULL);
 }
 
+void process::run()
+{
+}
+
+void process::begin()
+{
+}
+
+void process::end()
+{
+}
+
 void *run(void *proc)
 {
 	if (proc != NULL)
 	{
+		((process*)proc)->begin();
 		try
 		{
 			((process*)proc)->run();
