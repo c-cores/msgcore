@@ -2,6 +2,7 @@
 
 #include <pthread.h>
 #include <exception>
+#include <std/ascii_stream.h>
 
 namespace msg
 {
@@ -59,6 +60,60 @@ struct chan : channel
 		begin_recv();
 		temp = *data;
 		end_recv();
+		return temp;
+	}
+
+	bool probe(data_t *value = NULL)
+	{
+		if (begin_probe())
+		{
+			if (value != NULL)
+				*value = *data;
+			end_probe();
+			return true;
+		}
+		else
+			return false;
+	}
+};
+
+
+template <typename data_t = void>
+struct log_chan : channel
+{
+	log_chan(port<data_t> &send, port<data_t> &recv, const char *path = NULL)
+	{
+		send.C = this;
+		recv.C = this;
+
+		if (path)
+			dbg.open(path);
+		else
+			dbg.ptr = stdout;
+	}
+
+	~log_chan() {
+		if (dbg.ptr != stdout && dbg.ptr != NULL)
+			dbg.close();
+	}
+
+	const data_t *data;
+	core::ascii_stream dbg;
+
+	void send(const data_t &value)
+	{
+		begin_send();
+		data = &value;
+		end_send();
+	}
+
+	data_t recv()
+	{
+		data_t temp;
+		begin_recv();
+		temp = *data;
+		end_recv();
+		dbg << temp << endl;
 		return temp;
 	}
 
