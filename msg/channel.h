@@ -43,18 +43,18 @@ struct chan : channel
 		recv.C = this;
 	}
 
-	~chan() {}
+	virtual ~chan() {}
 
 	const data_t *data;
 
-	void send(const data_t &value)
+	virtual void send(const data_t &value)
 	{
 		begin_send();
 		data = &value;
 		end_send();
 	}
 
-	data_t recv()
+	virtual data_t recv()
 	{
 		data_t temp;
 		begin_recv();
@@ -63,7 +63,7 @@ struct chan : channel
 		return temp;
 	}
 
-	bool probe(data_t *value = NULL)
+	virtual bool probe(data_t *value = NULL)
 	{
 		if (begin_probe())
 		{
@@ -79,13 +79,12 @@ struct chan : channel
 
 
 template <typename data_t = void>
-struct log_chan : channel
+struct log_chan : chan<data_t>
 {
-	log_chan(port<data_t> &send, port<data_t> &recv, const char *path = NULL)
-	{
-		send.C = this;
-		recv.C = this;
+	typedef chan<data_t> super;
 
+	log_chan(port<data_t> &send, port<data_t> &recv, const char *path = NULL) : super(send, recv)
+	{
 		if (path)
 			dbg.open(path);
 		else
@@ -97,38 +96,18 @@ struct log_chan : channel
 			dbg.close();
 	}
 
-	const data_t *data;
 	core::ascii_stream dbg;
 
-	void send(const data_t &value)
-	{
-		begin_send();
-		data = &value;
-		end_send();
-	}
+	using super::send;
 
 	data_t recv()
 	{
-		data_t temp;
-		begin_recv();
-		temp = *data;
-		end_recv();
+		data_t temp = super::recv();
 		dbg << temp << endl;
 		return temp;
 	}
 
-	bool probe(data_t *value = NULL)
-	{
-		if (begin_probe())
-		{
-			if (value != NULL)
-				*value = *data;
-			end_probe();
-			return true;
-		}
-		else
-			return false;
-	}
+	using super::probe;
 };
 
 struct disconnected : public std::exception
