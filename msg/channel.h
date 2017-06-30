@@ -27,8 +27,9 @@ struct channel
 	void end_send();
 	void begin_recv();
 	void end_recv();
-	bool begin_probe();
-	void end_probe();
+	void begin_data_probe();
+	void end_data_probe();
+	bool probe();
 };
 
 template <typename data_t>
@@ -37,6 +38,8 @@ struct port;
 template <typename data_t = void>
 struct chan : channel
 {
+	typedef channel super;
+	
 	chan(port<data_t> &send, port<data_t> &recv)
 	{
 		send.C = this;
@@ -63,17 +66,18 @@ struct chan : channel
 		return temp;
 	}
 
-	virtual bool probe(data_t *value = NULL)
+	virtual bool probe()
 	{
-		if (begin_probe())
-		{
-			if (value != NULL)
-				*value = *data;
-			end_probe();
-			return true;
-		}
-		else
-			return false;
+		return super::probe();
+	}
+
+	virtual data_t data_probe()
+	{
+		data_t temp;
+		begin_data_probe();
+		temp = *data;
+		end_data_probe();
+		return temp;
 	}
 };
 
@@ -108,6 +112,7 @@ struct log_chan : chan<data_t>
 	}
 
 	using super::probe;
+	using super::data_probe;
 };
 
 struct disconnected : public std::exception
@@ -152,13 +157,22 @@ struct port
 			throw disconnected();
 	}
 
-	bool probe(data_t *value = NULL)
+	bool probe()
 	{
 		if (C)
-			return C->probe(value);
+			return C->probe();
 		else
 			throw disconnected();
 	}
+
+	data_t data_probe()
+	{
+		if (C)
+			return C->data_probe();
+		else
+			throw disconnected();
+	}
+
 };
 
 }

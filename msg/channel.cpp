@@ -72,24 +72,30 @@ void channel::end_recv()
 	pthread_mutex_unlock(&mutex);
 }
 
-bool channel::begin_probe()
+void channel::begin_data_probe()
+{
+	pthread_mutex_lock(&mutex);
+	while (status == empty)
+		pthread_cond_wait(&signal, &mutex);
+	check();
+	pthread_mutex_unlock(&mutex);
+}
+
+void channel::end_data_probe()
+{
+	pthread_mutex_lock(&mutex);
+	check();
+	pthread_cond_signal(&signal);
+	pthread_mutex_unlock(&mutex);
+}
+
+bool channel::probe()
 {
 	bool temp;
 	pthread_mutex_lock(&mutex);
-	pthread_cond_wait(&signal, &mutex);
-	check();
 	temp = (status == full);
-	pthread_cond_signal(&signal);
 	pthread_mutex_unlock(&mutex);
 	return temp;
-}
-
-void channel::end_probe()
-{
-	pthread_mutex_lock(&mutex);
-	check();
-	pthread_cond_signal(&signal);
-	pthread_mutex_unlock(&mutex);
 }
 
 }
