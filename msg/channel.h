@@ -93,26 +93,63 @@ struct log_chan : chan<data_t>
 			dbg.open(path);
 		else
 			dbg.ptr = stdout;
+		logged = true;
 	}
 
-	~log_chan() {
+	virtual ~log_chan() {
 		if (dbg.ptr != stdout && dbg.ptr != NULL)
 			dbg.close();
 	}
 
+	using super::data;
 	core::ascii_stream dbg;
+	bool logged;
 
-	using super::send;
+	using super::super::begin_send;
+	using super::super::end_send;
+	using super::super::begin_recv;
+	using super::super::end_recv;
+	using super::super::begin_data_probe;
+	using super::super::end_data_probe;
+	using super::super::probe;
 
-	data_t recv()
+	virtual void send(const data_t &value)
 	{
-		data_t temp = super::recv();
-		dbg << temp << endl;
+		begin_send();
+		data = &value;
+		logged = false;
+		end_send();
+	}
+
+	virtual data_t recv()
+	{
+		data_t temp;
+		begin_recv();
+		temp = *data;
+		if (!logged)
+		{
+			dbg << temp << endl;
+			logged = true;
+		}
+		end_recv();
 		return temp;
 	}
 
 	using super::probe;
-	using super::data_probe;
+
+	data_t data_probe()
+	{
+		data_t temp;
+		begin_data_probe();
+		temp = *data;
+		if (!logged)
+		{
+			dbg << temp << endl;
+			logged = true;
+		}
+		end_data_probe();
+		return temp;
+	}
 };
 
 struct disconnected : public std::exception
