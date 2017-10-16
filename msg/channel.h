@@ -2,7 +2,7 @@
 
 #include <pthread.h>
 #include <exception>
-#include <std/ascii_stream.h>
+#include <std/io.h>
 
 namespace msg
 {
@@ -87,22 +87,19 @@ struct log_chan : chan<data_t>
 {
 	typedef chan<data_t> super;
 
-	log_chan(port<data_t> &send, port<data_t> &recv, const char *path = NULL) : super(send, recv)
+	log_chan(port<data_t> &send, port<data_t> &recv, const char *path = NULL) : super(send, recv), dbg(0)
 	{
 		if (path)
 			dbg.open(path);
-		else
-			dbg.ptr = stdout;
 		logged = true;
 	}
 
 	virtual ~log_chan() {
-		if (dbg.ptr != stdout && dbg.ptr != NULL)
-			dbg.close();
+		dbg.close();
 	}
 
 	using super::data;
-	core::ascii_stream dbg;
+	core::stream<core::string> dbg;
 	bool logged;
 
 	using super::super::begin_send;
@@ -128,7 +125,7 @@ struct log_chan : chan<data_t>
 		temp = *data;
 		if (!logged)
 		{
-			dbg << temp << endl;
+			dbg << temp << core::endl;
 			logged = true;
 		}
 		end_recv();
@@ -144,7 +141,7 @@ struct log_chan : chan<data_t>
 		temp = *data;
 		if (!logged)
 		{
-			dbg << temp << endl;
+			dbg << temp << core::endl;
 			logged = true;
 		}
 		end_data_probe();
