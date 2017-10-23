@@ -13,8 +13,9 @@ struct channel
 	pthread_cond_t signal;
 	enum {
 		empty = 0,
-		full = 1,
-		term = 2
+		ready = 1,
+		full = 2,
+		term = 3
 	} status;
 
 	channel();
@@ -24,6 +25,7 @@ struct channel
 	void check();
 	
 	void begin_send();
+	void mid_send();
 	void end_send();
 	void begin_recv();
 	void end_recv();
@@ -49,6 +51,18 @@ struct chan : channel
 	virtual ~chan() {}
 
 	const data_t *data;
+
+	virtual void senda(const data_t &value)
+	{
+		begin_send();
+		data = &value;
+		mid_send();
+	}
+
+	virtual void sendb()
+	{
+		end_send();
+	}
 
 	virtual void send(const data_t &value)
 	{
@@ -103,12 +117,27 @@ struct log_chan : chan<data_t>
 	bool logged;
 
 	using super::super::begin_send;
+	using super::super::mid_send;
 	using super::super::end_send;
 	using super::super::begin_recv;
 	using super::super::end_recv;
 	using super::super::begin_data_probe;
 	using super::super::end_data_probe;
 	using super::super::probe;
+
+	virtual void senda(const data_t &value)
+	{
+		begin_send();
+		data = &value;
+		logged = false;
+		mid_send();
+	}
+
+	virtual void sendb()
+	{
+		end_send();
+	}
+
 
 	virtual void send(const data_t &value)
 	{
@@ -173,6 +202,22 @@ struct port
 	{
 		if (C)
 			C->stop();
+	}
+
+	void senda(const data_t &value)
+	{
+		if (C)
+			C->senda(value);
+		else
+			throw disconnected();
+	}
+
+	void sendb()
+	{
+		if (C)
+			C->sendb();
+		else
+			throw disconnected();
 	}
 
 	void send(const data_t &value)
